@@ -1,13 +1,21 @@
 version: '3'
 
-services: 
+services:
+  frontend:
+    build: ./frontend
+    container_name: test-docker-frontend
+    command: serve -s build -l 3000
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
   api:
     build: ./api
     container_name: test-docker-api
     command: npm run start
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
       - PORT=3000
       - HOST=http://test-docker.com
@@ -20,6 +28,16 @@ services:
     container_name: test-docker-api_db
     volumes:
       - mongodb_api:/data/db
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: test-docker-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - frontend
 
 volumes:
   mongodb_api:
