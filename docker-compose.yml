@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: test-docker-frontend
+    command: serve -s build -l 3000
+    restart: unless-stopped
+    networks:
+      - test-docker-network
+
+  api:
+    build: ./api
+    container_name: test-docker-api
+    command: npm run start
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - HOST=http://test-docker.com
+      - DB_URL=mongodb://api_db:27017/api
+    depends_on:
+      - api_db
+    networks:
+      - test-docker-network
+
+  api_db:
+    image: mongo:latest
+    container_name: test-docker-api_db
+    volumes:
+      - mongodb_api:/data/db
+    networks:
+      - test-docker-network
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: test-docker-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - frontend
+      - api
+    networks:
+      - test-docker-network
+
+volumes:
+  mongodb_api:
+
+networks:
+  test-docker-network:
+    driver: bridge
